@@ -5,49 +5,115 @@ from datasets import load_dataset
 from tqdm import tqdm
 from dotenv import load_dotenv
 import os
+import textwrap
 
 class PIIRedactor:
     def __init__(self, api_key: str):
         """Initialize the PII redactor with OpenAI API key."""
         self.client = openai.OpenAI(api_key=api_key)
         self.pii_types = [
-            "name", "email", "phone number", "address", 
+            "name", "email", "phone number", "address", "username",
             "social security number", "credit card number",
-            "date of birth", "passport number", "driver's license number", "password", "date", "ip_address"
+            "date of birth", "passport number", "driver's license number", "password", "date", "ip_address", "time"
         ]
+    def recover_spans(self, text: str, pii_entities: list) -> list:
+        """
+        Given original text and LLM-extracted PII entities with only 'value' and 'label',
+        find true character spans and return corrected entries.
+        """
+        corrected = []
+        used_spans = set()
+        
+        for entity in pii_entities:
+            value = entity["value"]
+            label = entity["label"]
+
+            start = text.find(value)
+            if start == -1:
+                # fallback: try a space-stripped search
+                alt_value = value.replace(" ", "")
+                for i in range(len(text)):
+                    window = text[i:i+len(alt_value)]
+                    if window.replace(" ", "") == alt_value:
+                        start = i
+                        break
+            if start == -1:
+                print(f"Warning: Couldn't find span for value: {value}")
+                continue
+
+            end = start + len(value)
+            
+            # Avoid duplicate matches (e.g. repeated names)
+            if (start, end) in used_spans:
+                continue
+            used_spans.add((start, end))
+
+            corrected.append({
+                "label": label,
+                "value": value,
+                "start": start,
+                "end": end
+            })
+
+        return corrected
     
     def redact_text(self, text: str) -> Dict:
         """
         Redact PII from the given text using OpenAI API.
         Returns the redacted text and the identified PII entities.
         """
-        prompt = f"""
-        Analyze the following text and identify all Personally Identifiable Information (PII).
-        For each PII entity found, provide:
-        1. The type of PII (from this list: {', '.join(self.pii_types)})
-        2. The exact text that contains the PII
-        3. The start and end position in the original text
-        
-        Text to analyze:
-        {text}
-        
-        Respond in JSON format with the following structure:
-        {{
-            "redacted_text": "text with PII replaced with [REDACTED]",
-            "pii_entities": [
-                {{
-                    "type": "type of PII",
-                    "value": "original text",
-                    "start": start_position,
-                    "end": end_position
-                }}
-            ]
-        }}
-        
-        IMPORTANT: Your response must be valid JSON. Do not include any additional text or explanations.
+        few_shot_example = """
+        Example:
+        Input: "John Smith's phone number is (555) 123-4567 and his email is john.smith@example.com."
+        Output:
+        {
+        "redacted_text": "[NAME]'s phone number is [PHONE] and his email is [EMAIL].",
+        "pii_entities": [
+            {
+            "label": "NAME",
+            "value": "John Smith",
+            "start": 0,
+            "end": 10
+            },
+            {
+            "label": "PHONE",
+            "value": "(555) 123-4567",
+            "start": 30,
+            "end": 45
+            },
+            {
+            "label": "EMAIL",
+            "value": "john.smith@example.com",
+            "start": 63,
+            "end": 86
+            }
+        ]
+        }
         """
-        
-        print(text)
+
+        prompt = f"""
+        You are a data redaction assistant.
+
+        Your task is to identify all Personally Identifiable Information (PII) in the following text and redact them.
+
+        Redact each PII by replacing it with [label] (in uppercase, in square brackets).
+        Only use the following PII types: {', '.join(self.pii_types)}
+
+        For each PII entity found, return:
+        - "label": the PII type (from the list above)
+        - "value": the original text span
+        - "start": the character index where the PII starts in the original text
+        - "end": the character index where the PII ends (exclusive)
+
+        Respond in **valid JSON**. Do not include any other explanation.
+
+        {textwrap.dedent(few_shot_example)}
+
+        Now analyze this text:
+        Input: \"\"\"{text}\"\"\"
+        Output:
+        """
+            
         try:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -76,7 +142,8 @@ class PIIRedactor:
                 raise ValueError("Response is not a dictionary")
             if "redacted_text" not in result or "pii_entities" not in result:
                 raise ValueError("Response missing required fields")
-            
+            print(result["pii_entities"])
+            result["pii_entities"] = self.recover_spans(text, result["pii_entities"])
             return result
             
         except Exception as e:
@@ -146,20 +213,26 @@ def main():
     print("Processing dataset: ai4privacy/pii-masking-300k")
     results = redactor.process_dataset(
         split="train",
-        batch_size=5,
-        limit=5  # Process only first example for demonstration
+        batch_size=1,
+        limit=1  # Process only first example for demonstration
     )
-    
+    # Save results to a JSON file
+    output_file = "pii_redaction_results.json"
+    print(f"\nSaving results to {output_file}")
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
     # Print results
     for i, result in enumerate(results):
         print(f"\nExample {i + 1} (ID: {result['id']}, Language: {result['language']}, Set: {result['set']}):")
         print("Original source text:", result["original_source_text"])
+        print("Original target text:", result["original_target_text"])
         print("Redacted text:", result["redacted_text"])
         print("Original privacy mask:", result["original_privacy_mask"])
         print("Original span labels:", result["original_span_labels"])
         print("Identified PII entities:")
         for entity in result["pii_entities"]:
-            print(f"- {entity['type']}: {entity['value']}")
+            print(entity)
+            print(f"- {entity['label']}: {entity['value']}")
 
 if __name__ == "__main__":
     main() 
