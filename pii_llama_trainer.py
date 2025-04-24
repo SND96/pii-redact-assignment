@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create output directories if they don't exist
-os.makedirs("./pii-redact-model", exist_ok=True)
+os.makedirs("./pii-redact-model-new", exist_ok=True)
 os.makedirs("./logs", exist_ok=True)
 
 try:
@@ -32,8 +32,8 @@ try:
     logger.info("Selecting 10% of the data...")
     train_size = len(dataset["train"])
     val_size = len(dataset["validation"])
-    train_subset = dataset["train"].select(range(int(train_size * 0.001)))
-    val_subset = dataset["validation"].select(range(int(val_size * 0.001)))
+    train_subset = dataset["train"].select(range(1))
+    val_subset = dataset["validation"].select(range(1))
     
     # Create new dataset dict with subsets
     dataset = {

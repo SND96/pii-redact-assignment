@@ -24,7 +24,7 @@ class PIIRedactor:
             self.client = openai.OpenAI(api_key=api_key)
         else:
             # Load the local Llama model
-            model_path = "pii-redact-model-final"
+            model_path = "pii-redact-model-new"
             if not os.path.exists(model_path):
                 raise ValueError(f"Llama model not found at {model_path}")
             
@@ -166,6 +166,7 @@ class PIIRedactor:
             
         try:
             if self.use_llama:
+                print("Using Llama model")
                 # Prepare input for Llama model
                 inputs = self.tokenizer(
                     prompt,
@@ -189,6 +190,7 @@ class PIIRedactor:
                 content = content.split("Output:")[-1].strip()
             else:
                 # Use OpenAI API
+                print("Using OpenAI API")
                 response = self.client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
