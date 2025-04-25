@@ -41,7 +41,7 @@ Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation 
 
 ### OpenAI API (`gpt-3.5-turbo`)
 
-**Overall Metrics:**
+**Overall Metrics (Ignoring Labels):**
 - **Precision:** 0.8344  
 - **Recall:** 0.7975  
 - **F1 Score:** 0.8155  
@@ -50,7 +50,7 @@ Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation 
 
 ### Fine-Tuned Mistral (`mistralai/Mistral-7B-Instruct-v0.2`)
 
-**Overall Metrics:**
+**Overall Metrics (Ignoring Labels):**
 - **Precision:** 0.5533  
 - **Recall:** 0.5253  
 - **F1 Score:** 0.5390  
