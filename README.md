@@ -18,6 +18,7 @@ The system is designed for developers who need high-quality redaction in practic
 * Performance: Supports both streaming (single file) and batch (entire dataset) modes.
 * Datasets: Optimized for structured, labeled datasets like ai4privacy. Using 1000 samples from training for fine tuning and 50 samples from validation set for evals.
 * Interface: CLI-first design for developer workflows and automation.
+* High recall is preferable over precision, better to redact more than less.
 
 ## Quickstart (Try It Now)
 
@@ -49,6 +50,12 @@ Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation 
 - **Recall:** 0.7975  
 - **F1 Score:** 0.8155  
 
+### OpenAI API (`gpt-4-turbo`)
+**Overall Metrics (Ignoring Labels):**
+- **Precision:** 0.9046  
+- **Recall:** 0.9304  
+- **F1 Score:** 0.9173  
+
 ---
 
 ### Fine-Tuned Mistral (`mistralai/Mistral-7B-Instruct-v0.2`)
@@ -76,6 +83,7 @@ Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation 
 * Include confidence scores with each redacted entity.
 * Longer and better fine tuning of Mistral model.
 * Allowing the option to tune for recall or precision.
+* Allow choosing of different models and different prompts.
 
 ### Language and Domain Support
 * Extend to non-English languages using multilingual datasets.

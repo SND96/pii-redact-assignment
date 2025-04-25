@@ -299,7 +299,7 @@ class PIIRedactor:
         """
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4-turbo",
                 messages=[
                     {"role": "system", "content": "You are a PII detection and redaction assistant. You must respond with valid JSON only."},
                     {"role": "user", "content": prompt}
