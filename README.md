@@ -10,7 +10,7 @@ This project implements a flexible and developer-friendly system for detecting a
 The system is designed for developers who need high-quality redaction in practical settings like documents, emails, or transcripts. The training and evaluation pipelines leverage the `ai4privacy/pii-masking-300k` dataset for benchmark comparison and reproducibility.
 
 
-# Summary of Assumptions 
+## Summary of Assumptions 
 * PII Types: Default list provided, with full support for user-defined taxonomies.
 * Redaction Format: Replace spans with [LABEL] tokens for interpretability; no full removal by default.
 * Model Flexibility: Works with OpenAI (cloud) or Mistral fine tuned (local).
