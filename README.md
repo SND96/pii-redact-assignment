@@ -1,13 +1,107 @@
 # PII Redaction Project
 
-This repository contains tools and scripts for Personally Identifiable Information (PII) detection and redaction using various approaches, including fine-tuned Mistral models and OpenAI's API.
+This project implements a flexible and developer-friendly system for detecting and redacting Personally Identifiable Information (PII) from natural language text. It combines both prompt-based and fine-tuned approaches to balance ease of use with performance:
+
+- A **prompt-based redactor** using OpenAI's API for quick experimentation and zero-shot usage.
+- A **fine-tuned Mistral model with LoRA** for high-precision offline redaction.
+- A complete **evaluation suite** to measure precision, recall, and F1 — both overall and per PII label.
+- A lightweight **command-line interface** and modular code structure for seamless integration into developer pipelines.
+
+The system is designed for developers who need high-quality redaction in practical settings like documents, emails, or transcripts. The training and evaluation pipelines leverage the `ai4privacy/pii-masking-300k` dataset for benchmark comparison and reproducibility.
+
+
+# Summary of Assumptions 
+* PII Types: Default list provided, with full support for user-defined taxonomies.
+* Redaction Format: Replace spans with [LABEL] tokens for interpretability; no full removal by default.
+* Model Flexibility: Works with OpenAI (cloud) or Mistral fine tuned (local).
+* Languages: English-only for now.
+* Performance: Supports both streaming (single file) and batch (entire dataset) modes.
+* Datasets: Optimized for structured, labeled datasets like ai4privacy. Using 1000 samples from training for fine tuning and 50 samples from validation set for evals.
+* Interface: CLI-first design for developer workflows and automation.
+
+## Quickstart (Try It Now)
+
+Run redaction on a text file using OpenAI:
+```bash
+python pii_redactor.py --input sample.txt --output output.json
+```
+
+Run redaction on a text file using Mistral:
+```bash
+python pii_redactor.py --input sample.txt --output output.json --use-mistral
+```
+
+## Fine tuning
+* Mistral model is fine tuned using LoRA on a subset of 1000 samples from training set.
+* BERT was another possible option but chose 
+
+## Evaluation Results
+
+Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation set.
+
+### OpenAI API (`gpt-3.5-turbo`)
+
+**Overall Metrics:**
+- **Precision:** 0.8344  
+- **Recall:** 0.7975  
+- **F1 Score:** 0.8155  
+
+---
+
+### Fine-Tuned Mistral (`mistralai/Mistral-7B-Instruct-v0.2`)
+
+**Overall Metrics:**
+- **Precision:** 0.5533  
+- **Recall:** 0.5253  
+- **F1 Score:** 0.5390  
+
+### Per Label Metrics:
+![F1 Score Comparison](images/f1_compare.png)
+
+
+
+## Limitations
+
+* Current version supports only English text.
+* The Mistral model is fine-tuned on a subset of 1000 examples and may underperform on edge cases.
+* Redaction assumes labeled [LABEL] placeholders; full removal is not yet supported.
+*  OpenAI API usage may incur cost and is rate-limited.
+* Tests do not directly test the models.
+
+## Future Improvements & Extensions
+
+### Model Improvements
+* Include confidence scores with each redacted entity.
+* Longer and better fine tuning of Mistral model.
+* Allowing the option to tune for recall or precision.
+
+### Language and Domain Support
+* Extend to non-English languages using multilingual datasets.
+* Add PII and NER templates and evaluation for specific domains like healthcare, legal, and finance.
+
+### Performance and Deployment
+* Add a hybrid mode: use simple rules first, then fall back to the model when needed.
+* Allow batch redaction with parallel processing for large datasets.
+
+### Usability
+*	Let users control how each PII type is masked (e.g., replace with [NAME] or ***).
+*	Add basic regex-based matching as a fallback option.
+
+### Data and Training
+* Allow users to correct redaction errors and use those corrections to improve the model over time.
+
+### Evals
+* More metrics like F2 score, precision recall curve, confusion matrix, etc.
+
+### Tests
+* Add tests for the CLI and the models. 
 
 ## Project Structure
 
-- `pii_redactor.py`: Main script for PII detection and redaction
-- `pii_mistral_fine_tune.py`: Script for fine-tuning Mistral model for PII detection
-- `pii_eval.py`: Evaluation script for PII detection performance
 - `dataset_create.py`: Script for downloading and preparing the PII masking dataset
+- `fine_tuning/pii_mistral_fine_tune.py`: Script for fine-tuning Mistral model for PII detection
+- `evals/pii_eval.py`: Evaluation script for PII detection performance
+- `pii_redactor.py`: Main script for PII detection and redaction
 - `default_pii_types.py`: Configuration file for PII types
 - `tests/`: Directory containing test files
 - `model_mistral/`: Directory containing fine-tuned Mistral model
@@ -23,7 +117,7 @@ This repository contains tools and scripts for Personally Identifiable Informati
 1. Clone the repository:
 ```bash
 git clone https://github.com/SND96/pii-redact-assignment
-cd fathom-pii-project
+cd pii-redact-assignment
 ```
 
 2. Install the required dependencies:
@@ -64,20 +158,18 @@ The dataset contains the following fields:
 - `mbert_text_tokens`: Tokenized text for mBERT
 - `mbert_bio_labels`: BIO labels for mBERT
 
-
 ### 2. Model Fine-tuning
 
 To fine-tune the Mistral model using LoRA (Low-Rank Adaptation):
 
 ```bash
-python pii_mistral_fine_tune.py
+python fine_tuning/pii_mistral_fine_tune.py
 ```
 
 The script uses the following default configuration:
 - Base model: "mistralai/Mistral-7B-Instruct-v0.2"
 - Dataset: "ai4privacy/pii-masking-300k"
 - Training size: 1000 examples
-- Validation size: 100 examples
 - LoRA configuration:
   - Rank (r): 8
   - Alpha: 32
@@ -117,12 +209,12 @@ Example using OpenAI with custom PII types:
 python pii_redactor.py --input input.txt --output output.json --pii-types NAME EMAIL PHONE
 ```
 
-### 3. Evaluation
+### 4. Evaluation
 
 To evaluate PII detection performance:
 
 ```bash
-python pii_eval.py --file pii_redaction_results_val.json
+python evals/pii_eval.py --file pii_redaction_results_val.json
 ```
 
 Command line arguments:
@@ -144,10 +236,8 @@ The evaluation script provides the following metrics:
 
 Example with per-label metrics:
 ```bash
-python pii_eval.py --file output.json --per-label
+python evals/pii_eval.py --file output.json --per-label
 ```
-
-
 
 ## Testing
 

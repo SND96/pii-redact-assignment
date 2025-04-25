@@ -12,7 +12,7 @@ from datasets import load_from_disk
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, logging as transformers_logging
 import argparse
-from default_pii_types import DEFAULT_PII_TYPES
+from static.default_pii_types import DEFAULT_PII_TYPES
 
 # Suppress tokenizer warnings
 transformers_logging.set_verbosity_error()
