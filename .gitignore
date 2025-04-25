@@ -176,7 +176,6 @@ data/.DS_Store
 
 data/*
 
-*.json
 *-model*
 *-model
 *logs
