@@ -32,8 +32,11 @@ python pii_redactor.py --input sample.txt --output output.json --use-mistral
 ```
 
 ## Fine tuning
-* Mistral model is fine tuned using LoRA on a subset of 1000 samples from training set.
-* BERT was another possible option but chose 
+* Tried two models, TinyLLama 1B and Mistral 7B model. Both were fine tuned using LoRA on a subset of 1000 samples from training set and Mistral was better.
+* BERT was another possible option, but it was not chosen I wanted to try to share prompts between the decoder models and BERT is an encoder model. 
+
+![Loss Graph](images/lora_losses.png)
+
 
 ## Evaluation Results
 
@@ -57,7 +60,6 @@ Evaluated on a 50-sample subset of the `ai4privacy/pii-masking-300k` validation 
 
 ### Per Label Metrics:
 ![F1 Score Comparison](images/f1_compare.png)
-
 
 
 ## Limitations
